@@ -6,13 +6,16 @@ ArrayList<float[]> avgSaturations = new ArrayList<float[]>();
 ArrayList<float[]> avgBrightnesses = new ArrayList<float[]>();
 ArrayList<Integer> sizes = new ArrayList<Integer>();
 
+boolean loading, loaded;
 
 void setup() {
   size(800, 400, P2D);
   colorMode(HSB);
 
+  loading = false;
+  loaded = false;
+
   selectFolder("Choose a directory of images:", "folderSelected");
-  noLoop();
 }
 
 void draw() {
@@ -24,42 +27,53 @@ void draw() {
   float ymin = height/2;
   float ymax = height/4;
 
-  noStroke();
-  for (int i = 255; i >= 0; i--) {
-    beginShape();
-    for (int j = 0; j < sizes.size(); j++) {
-      fill(color(i, avgSaturations.get(j)[i], avgBrightnesses.get(j)[i]));
-      float x = map(j, 0, sizes.size()-1, xmin, xmax);
-      float y = ymin;
-      vertex(x, y);
+  if (loading) {
+    stroke(0);
+    noFill();
+    rect(xmin, ymax, xmax - xmin, ymin - ymax);
+    fill(0);
+    noStroke();
+    rect(xmin, ymax, pctLoaded*(xmax - xmin), ymin - ymax);
+  } else if (loaded) {
+    noStroke();
+    for (int i = 255; i >= 0; i--) {
+      beginShape();
+      for (int j = 0; j < sizes.size(); j++) {
+        fill(color(i, avgSaturations.get(j)[i], avgBrightnesses.get(j)[i]));
+        float x = map(j, 0, sizes.size()-1, xmin, xmax);
+        float y = ymin;
+        vertex(x, y);
+      }
+      for (int j = sizes.size() - 1; j >= 0; j--) {
+        fill(color(i, avgSaturations.get(j)[i], avgBrightnesses.get(j)[i]));
+        float x = map(j, 0, sizes.size()-1, xmin, xmax);
+        float y = map(colorHistos.get(j)[i], 0, sizes.get(j), ymin, ymax);
+        vertex(x, y);
+      }
+      endShape(CLOSE);
     }
-    for (int j = sizes.size() - 1; j >= 0; j--) {
-      fill(color(i, avgSaturations.get(j)[i], avgBrightnesses.get(j)[i]));
-      float x = map(j, 0, sizes.size()-1, xmin, xmax);
-      float y = map(colorHistos.get(j)[i], 0, sizes.get(j), ymin, ymax);
-      vertex(x, y);
-    }
-    endShape(CLOSE);
-  }
 
-  for (int j = 0; j < sizes.size(); j++) {
-    if (mouseX > map(j-.5, 0, sizes.size()-1, xmin, xmax) && 
-      mouseX < map(j+.5, 0, sizes.size()-1, xmin, xmax) &&
-      mouseY > ymax) {
-      image(images.get(j), 
-        mouseX - thumbWidth/2, mouseY, 
-        thumbWidth, thumbWidth*images.get(j).height/images.get(j).width);
-      break;
+    for (int j = 0; j < sizes.size(); j++) {
+      if (mouseX > map(j-.5, 0, sizes.size()-1, xmin, xmax) && 
+        mouseX < map(j+.5, 0, sizes.size()-1, xmin, xmax) &&
+        mouseY > ymax) {
+        image(images.get(j), 
+          mouseX - thumbWidth/2, mouseY, 
+          thumbWidth, thumbWidth*images.get(j).height/images.get(j).width);
+        break;
+      }
     }
   }
 }
 
-
+float pctLoaded;
 void folderSelected(File selection) {
   if (selection == null) exit();
 
   String[] filenames = selection.list();
-
+  
+  pctLoaded = 0.f;
+  loading = true;
   for (int i = 0; i < filenames.length; i++) {
     println(filenames[i]);
 
@@ -68,6 +82,8 @@ void folderSelected(File selection) {
       int[] colorHisto = new int[256];
       float[] avgSaturation = new float[256];
       float[] avgBrightness = new float[256];
+
+      println(img.width + ", " + img.height);
 
       int imgSize = img.width*img.height;
       sizes.add(imgSize);
@@ -100,6 +116,8 @@ void folderSelected(File selection) {
       avgSaturations.add(avgSaturation);
       avgBrightnesses.add(avgBrightness);
     }
+    pctLoaded = (float)i/(float)filenames.length;
   }
-  loop();
+  loading = false;
+  loaded = true;
 }
