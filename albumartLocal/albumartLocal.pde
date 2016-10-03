@@ -76,6 +76,8 @@ void folderSelected(File selection) {
   loading = true;
   for (int i = 0; i < filenames.length; i++) {
     println(filenames[i]);
+    File file = new File(selection, filenames[i]);
+    println(file.lastModified());
 
     PImage img = loadImage(selection + File.separator + filenames[i]);
     if (img != null) {
